@@ -3,47 +3,53 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#if __has_attribute(swift_wrapper)
+#define SWIFT_ENUM __attribute__((swift_wrapper(enum)))
+#else
+#define SWIFT_ENUM
+#endif
+
 typedef uint32_t u32;
 #define EXPORT static
 
-typedef enum ARM64Reg {
-    ARM64REG_R0  =  0,
-    ARM64REG_R1  =  1,
-    ARM64REG_R2  =  2,
-    ARM64REG_R3  =  3,
-    ARM64REG_R4  =  4,
-    ARM64REG_R5  =  5,
-    ARM64REG_R6  =  6,
-    ARM64REG_R7  =  7,
-    ARM64REG_R8  =  8,
-    ARM64REG_R9  =  9,
-    ARM64REG_R10 = 10,
-    ARM64REG_R11 = 11,
-    ARM64REG_R12 = 12,
-    ARM64REG_R13 = 13,
-    ARM64REG_R14 = 14,
-    ARM64REG_R15 = 15,
-    ARM64REG_R16 = 16,
-    ARM64REG_R17 = 17,
-    ARM64REG_R18 = 18,
-    ARM64REG_R19 = 19,
-    ARM64REG_R20 = 20,
-    ARM64REG_R21 = 21,
-    ARM64REG_R22 = 22,
-    ARM64REG_R23 = 23,
-    ARM64REG_R24 = 24,
-    ARM64REG_R25 = 25,
-    ARM64REG_R26 = 26,
-    ARM64REG_R27 = 27,
-    ARM64REG_R28 = 28,
-    ARM64REG_R29 = 29,
-    ARM64REG_R30 = 30,
-    ARM64REG_SP  = 31,
+typedef u32 ARM64Reg SWIFT_ENUM;
 
-    ARM64REG_ZR  = 32,
-    ARM64REG_LR  = 33,
-    ARM64REG_FR  = 34,
-} ARM64Reg;
+ARM64Reg const ARM64RegR0  =  0;
+ARM64Reg const ARM64RegR1  =  1;
+ARM64Reg const ARM64RegR2  =  2;
+ARM64Reg const ARM64RegR3  =  3;
+ARM64Reg const ARM64RegR4  =  4;
+ARM64Reg const ARM64RegR5  =  5;
+ARM64Reg const ARM64RegR6  =  6;
+ARM64Reg const ARM64RegR7  =  7;
+ARM64Reg const ARM64RegR8  =  8;
+ARM64Reg const ARM64RegR9  =  9;
+ARM64Reg const ARM64RegR10 = 10;
+ARM64Reg const ARM64RegR11 = 11;
+ARM64Reg const ARM64RegR12 = 12;
+ARM64Reg const ARM64RegR13 = 13;
+ARM64Reg const ARM64RegR14 = 14;
+ARM64Reg const ARM64RegR15 = 15;
+ARM64Reg const ARM64RegR16 = 16;
+ARM64Reg const ARM64RegR17 = 17;
+ARM64Reg const ARM64RegR18 = 18;
+ARM64Reg const ARM64RegR19 = 19;
+ARM64Reg const ARM64RegR20 = 20;
+ARM64Reg const ARM64RegR21 = 21;
+ARM64Reg const ARM64RegR22 = 22;
+ARM64Reg const ARM64RegR23 = 23;
+ARM64Reg const ARM64RegR24 = 24;
+ARM64Reg const ARM64RegR25 = 25;
+ARM64Reg const ARM64RegR26 = 26;
+ARM64Reg const ARM64RegR27 = 27;
+ARM64Reg const ARM64RegR28 = 28;
+ARM64Reg const ARM64RegR29 = 29;
+ARM64Reg const ARM64RegR30 = 30;
+ARM64Reg const ARM64RegSP  = 31;
+
+ARM64Reg const ARM64RegZR  = 32;
+ARM64Reg const ARM64RegLR  = 33;
+ARM64Reg const ARM64RegFR  = 34;
 
 /*
     when '000' result = (PSTATE.Z == '1');                          // EQ or NE
@@ -60,21 +66,20 @@ typedef enum ARM64Reg {
     if cond<0> == '1' && cond != '1111' then
         result = !result;
 */
-typedef enum ARM64COND {
-    ARM64COND_EQ = 0b0000,
-    ARM64COND_NE = 0b0001,
-    ARM64COND_MI = 0b0100,
-    ARM64COND_PL = 0b0101,
-    ARM64COND_VS = 0b0110,
-    ARM64COND_VC = 0b0111,
-    ARM64COND_HI = 0b1000,
-    ARM64COND_LS = 0b1001,
-    ARM64COND_GE = 0b1010,
-    ARM64COND_LT = 0b1011,
-    ARM64COND_GT = 0b1100,
-    ARM64COND_LE = 0b1101,
-    ARM64COND_AL = 0b1110,
-} ARM64COND;
+typedef u32 ARM64Cond SWIFT_ENUM;
+ARM64Cond const ARM64CondEQ = 0b0000;
+ARM64Cond const ARM64CondNE = 0b0001;
+ARM64Cond const ARM64CondMI = 0b0100;
+ARM64Cond const ARM64CondPL = 0b0101;
+ARM64Cond const ARM64CondVS = 0b0110;
+ARM64Cond const ARM64CondVC = 0b0111;
+ARM64Cond const ARM64CondHI = 0b1000;
+ARM64Cond const ARM64CondLS = 0b1001;
+ARM64Cond const ARM64CondGE = 0b1010;
+ARM64Cond const ARM64CondLT = 0b1011;
+ARM64Cond const ARM64CondGT = 0b1100;
+ARM64Cond const ARM64CondLE = 0b1101;
+ARM64Cond const ARM64CondAL = 0b1110;
 
 bool canPack(u32 val, u32 bits) {
     u32 highestBit = 32 - __builtin_clz(val);
@@ -83,14 +88,14 @@ bool canPack(u32 val, u32 bits) {
 
 EXPORT u32 encodeARM64Reg(ARM64Reg reg, ARM64Reg permittedStackAlias) {
     switch (reg) {
-    case ARM64REG_FR:
+    case ARM64RegFR:
         return 29;
 
-    case ARM64REG_LR:
+    case ARM64RegLR:
         return 30;
 
-    case ARM64REG_SP:
-    case ARM64REG_ZR:
+    case ARM64RegSP:
+    case ARM64RegZR:
         assert(permittedStackAlias == reg);
         return 31;
 
@@ -116,9 +121,9 @@ EXPORT u32 encodeADD(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
     u32 imm3   = 0;
 
 
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (op << 30) | (0b10001 << 24) | (0b001 << 21) | (Rm << 16) | (option << 13) | (imm3 << 10) | (Rn << 5) | Rd;
 }
@@ -130,9 +135,9 @@ EXPORT u32 encodeSUB(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
     u32 imm3   = 0;
 
 
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (op << 30) | (0b10001 << 24) | (0b001 << 21) | (Rm << 16) | (option << 13) | (imm3 << 10) | (Rn << 5) | Rd;
 }
@@ -152,8 +157,8 @@ EXPORT u32 encodeADDi(bool use64Bits, bool signExtend, u32 shift, u32 imm12, ARM
     u32 op = 0;
     u32 S  = signExtend ? 1 : 0;
 
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (op << 30) | (S << 29) | (0b10001 << 24) | (shift << 22) | (imm12 << 10) | (Rn << 5) | Rd;
 }
@@ -166,8 +171,8 @@ EXPORT u32 encodeSUBi(bool use64Bits, bool signExtend, u32 shift, u32 imm12, ARM
     u32 op = 1;
     u32 S  = signExtend ? 1 : 0;
 
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (op << 30) | (S << 29) | (0b10001 << 24) | (shift << 22) | (imm12 << 10) | (Rn << 5) | Rd;
 }
@@ -187,7 +192,7 @@ EXPORT u32 encodeADR(bool page, u32 imm21, ARM64Reg Rd) {
     u32 immhi = imm >> 2;
     u32 op    = page ? 1 : 0;
 
-    Rd  = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rd  = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (op << 31) | (immlo << 29) | (0b10000 << 24) | (immhi << 5) | Rd;
 }
@@ -214,7 +219,7 @@ EXPORT u32 encodeB(u32 imm26) {
  │ 0  1  0  1  0  1  0│ 0│                          imm19                         │ 0│   cond    │
  └────────────────────┴──┴────────────────────────────────────────────────────────┴──┴───────────┘
  */
-EXPORT u32 encodeBcond(u32 imm19, ARM64COND cond) {
+EXPORT u32 encodeBcond(u32 imm19, ARM64Cond cond) {
     assert(canPack(imm19, 19));
     return (0b0101010 << 25) | (imm19 << 5) | cond;
 }
@@ -231,8 +236,8 @@ EXPORT u32 encodeCMP(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn) {
     u32 option = 0b000;
     u32 imm3   = 0b000;
 
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rm = encodeARM64Reg(Rm, ARM64REG_ZR);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rm = encodeARM64Reg(Rm, ARM64RegZR);
 
     return (sf << 31) | (1 << 30) | (1 << 29) | (0b01011 << 24) | (0b001 << 21) | (Rm << 16) | (option << 13) | (imm3 << 10) | (Rn << 5) | 0b11111;
 }
@@ -249,11 +254,10 @@ EXPORT u32 encodeCMPi(bool use64Bits, u32 shift, u32 imm12, ARM64Reg Rn) {
     assert(canPack(imm12, 12));
 
     u32 sf = use64Bits ? 1 : 0;
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
 
     return (sf << 31) | (1 << 30) | (1 << 29) | (0b10001 << 24) | (shift << 22) | (imm12 << 10) | (Rn << 5) | 0b11111;
 }
-
 
 
 // MARK: Load and Stores
@@ -269,9 +273,9 @@ EXPORT u32 encodeCMPi(bool use64Bits, u32 shift, u32 imm12, ARM64Reg Rn) {
 EXPORT u32 encodeLD(u32 size, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rt) {
     assert(canPack(size, 2));
 
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Rn = encodeARM64Reg(Rn, ARM64REG_ZR); // FIXME: What is permitted here?
-    Rt = encodeARM64Reg(Rt, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Rn = encodeARM64Reg(Rn, ARM64RegZR); // FIXME: What is permitted here?
+    Rt = encodeARM64Reg(Rt, ARM64RegSP);
 
     u32 option = 0b000;
     u32 S      = 0b0;
@@ -291,8 +295,8 @@ EXPORT u32 encodeLDi(u32 size, u32 imm12, ARM64Reg Rn, ARM64Reg Rd) {
     assert(canPack(size, 2));
     assert(canPack(imm12, 12));
 
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (size << 30) | (0b11100101 << 22) | (imm12 << 10) | (Rn << 5) | Rd;
 }
@@ -309,8 +313,8 @@ EXPORT u32 encodeLDU(u32 size, u32 imm9, ARM64Reg Rn, ARM64Reg Rd) {
     assert(canPack(size, 2));
     assert(canPack(imm9, 9));
 
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (size << 30) | (0b11100001 << 22) | (imm9 << 12) | (Rn << 5) | Rd;
 }
@@ -329,9 +333,9 @@ EXPORT u32 encodeSTR(u32 size, u32 imm12, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rt)
     u32 option = 0b000;
     u32 S      = 0b0;
 
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rt = encodeARM64Reg(Rt, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rt = encodeARM64Reg(Rt, ARM64RegSP);
 
     return (size << 30) | (0b111000011 << 21) | (Rm << 16) | (option << 13) | (S << 12) | (0b10 << 10) | (Rn << 5) | Rt;
 }
@@ -350,8 +354,8 @@ EXPORT u32 encodeSTRi(u32 size, u32 imm12, ARM64Reg Rn, ARM64Reg Rt) {
 
     u32 opc = 0b00;
 
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rt = encodeARM64Reg(Rt, ARM64REG_SP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rt = encodeARM64Reg(Rt, ARM64RegSP);
 
     return (size << 30) | (0b111 << 27) | (opc << 22) | (imm12 << 10) | (Rn << 5) | Rt;
 }
@@ -374,8 +378,8 @@ EXPORT u32 encodeMOV(bool use32Bits, ARM64Reg Rm, ARM64Reg Rd) {
     u32 imm6 = 0b000000;
     u32 Rn   = 0b11111;
 
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (opc << 29) | (0b01010 << 24) | (N << 21) | (Rm << 16) | (imm6 << 10) | (Rn << 5) | Rd;
 }
@@ -395,7 +399,7 @@ EXPORT u32 encodeMOVi(bool use64Bits, u32 imm16, ARM64Reg Rd) {
     u32 opc = 0b10;
     u32 hw  = 0b00;
 
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (opc << 29) | (0b100101 << 23) | (hw << 21) | (imm16 << 5) | Rd;
 }
@@ -412,10 +416,10 @@ EXPORT u32 encodeMADD(bool use64Bits, ARM64Reg Rm, ARM64Reg Ra, ARM64Reg Rn, ARM
 
     u32 sf = use64Bits ? 1 : 0;
 
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Ra = encodeARM64Reg(Ra, ARM64REG_SP);
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Ra = encodeARM64Reg(Ra, ARM64RegSP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (0b11011 << 24) | (Rm << 16) | (o0 << 15) | (Ra << 10) | (Rn << 5) | Rd;
 }
@@ -425,10 +429,10 @@ EXPORT u32 encodeMSUB(bool use64Bits, ARM64Reg Rm, ARM64Reg Ra, ARM64Reg Rn, ARM
 
     u32 sf = use64Bits ? 1 : 0;
 
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Ra = encodeARM64Reg(Ra, ARM64REG_SP);
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Ra = encodeARM64Reg(Ra, ARM64RegSP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (0b11011 << 24) | (Rm << 16) | (o0 << 15) | (Ra << 10) | (Rn << 5) | Rd;
 }
@@ -444,9 +448,9 @@ EXPORT u32 encodeUDIV(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
     u32 sf = use64Bits ? 1 : 0;
     u32 o1 = 0;
 
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (0b11010110 << 21) | (Rm << 16) | (0b00001 << 11) | (o1 << 10) | (Rn << 5) | Rd;
 }
@@ -455,9 +459,9 @@ EXPORT u32 encodeSDIV(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
     u32 sf = use64Bits ? 1 : 0;
     u32 o1 = 1;
 
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (0b11010110 << 21) | (Rm << 16) | (0b00001 << 11) | (o1 << 10) | (Rn << 5) | Rd;
 }
@@ -474,9 +478,9 @@ EXPORT u32 encodeLSL(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
 
     u32 sf = use64Bits ? 1 : 0;
 
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (0b11010110 << 21) | (Rm << 16) | (0b00010 << 11) | (op2 << 10) | (Rn << 5) | Rd;
 }
@@ -493,9 +497,9 @@ EXPORT u32 encodeLSR(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
 
     u32 sf = use64Bits ? 1 : 0;
 
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (0b11010110 << 21) | (Rm << 16) | (0b00010 << 11) | (op2 << 10) | (Rn << 5) | Rd;
 }
@@ -516,9 +520,9 @@ EXPORT u32 encodeAND(bool use32Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
     u32 N     = 0b0;
     u32 imm6  = 0b000000;
 
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (opc << 29) | (0b01010 << 24) | (shift << 22) | (N << 21) | (Rm << 16) | (imm6 << 10) | (Rn << 5) | Rd;
 }
@@ -531,9 +535,9 @@ EXPORT u32 encodeORR(bool use32Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
     u32 N     = 0b1;
     u32 imm6  = 0b000000;
 
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (opc << 29) | (0b01010 << 24) | (shift << 22) | (N << 21) | (Rm << 16) | (imm6 << 10) | (Rn << 5) | Rd;
 }
@@ -546,9 +550,9 @@ EXPORT u32 encodeEOR(bool use32Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
     u32 N     = 0b0;
     u32 imm6  = 0b000000;
 
-    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
-    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
-    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+    Rn = encodeARM64Reg(Rn, ARM64RegSP);
+    Rm = encodeARM64Reg(Rm, ARM64RegSP);
+    Rd = encodeARM64Reg(Rd, ARM64RegSP);
 
     return (sf << 31) | (opc << 29) | (0b01010 << 24) | (shift << 22) | (N << 21) | (Rm << 16) | (imm6 << 10) | (Rn << 5) | Rd;
 }
