@@ -357,6 +357,7 @@ EXPORT u32 encodeSTRi(u32 size, u32 imm12, ARM64Reg Rn, ARM64Reg Rt) {
 }
 
 
+// MARK: More Data Processing
 
 /*
  ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -398,9 +399,6 @@ EXPORT u32 encodeMOVi(bool use64Bits, u32 imm16, ARM64Reg Rd) {
 
     return (sf << 31) | (opc << 29) | (0b100101 << 23) | (hw << 21) | (imm16 << 5) | Rd;
 }
-
-
-// MARK: More Data Processing
 
 /*
  ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -483,14 +481,74 @@ EXPORT u32 encodeLSL(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
     return (sf << 31) | (0b11010110 << 21) | (Rm << 16) | (0b00010 << 11) | (op2 << 10) | (Rn << 5) | Rd;
 }
 
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├──┬──┬──┬───────────────────────┬──────────────┬───────────┬─────┬──────────────┬──────────────┤
+ │sf│ 0│ 0│ 1  1  0  1  0  1  1  0│      Rm      │ 0  0  1  0│ op2 │      Rn      │      Rd      │
+ └──┴──┴──┴───────────────────────┴──────────────┴───────────┴─────┴──────────────┴──────────────┘
+ */
+EXPORT u32 encodeLSR(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
+    u32 op2 = 0b01;
+
+    u32 sf = use64Bits ? 1 : 0;
+
+    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
+    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
+    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+
+    return (sf << 31) | (0b11010110 << 21) | (Rm << 16) | (0b00010 << 11) | (op2 << 10) | (Rn << 5) | Rd;
+}
 
 /*
  ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
  │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
- ├──┬─────┬─────────────────┬──┬─────────────────┬─────────────────┬──────────────┬──────────────┤
- │sf│ opc │ 1  0  0  1  1  0│ N│       immr      │       imms      │      Rn      │      Rd      │
- └──┴─────┴─────────────────┴──┴─────────────────┴─────────────────┴──────────────┴──────────────┘
-*/
-EXPORT u32 encodeLSLi(bool use64Bits, u32 imm, ARM64Reg Rn, ARM64Reg Rd) {
-    return 0xFFFFFFFF;
+ ├──┬─────┬──────────────┬─────┬──┬──────────────┬─────────────────┬──────────────┬──────────────┤
+ │sf│ 0  1│ 0  1  0  1  0│shift│ 1│      Rm      │      imm6       │      Rn      │      Rd      │
+ └──┴─────┴──────────────┴─────┴──┴──────────────┴─────────────────┴──────────────┴──────────────┘
+      opc                        N
+ */
+EXPORT u32 encodeAND(bool use32Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
+    u32 opc  = 0b00;
+
+    u32 sf    = use32Bits ? 1 : 0;
+    u32 shift = 0b00;
+    u32 N     = 0b0;
+    u32 imm6  = 0b000000;
+
+    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
+    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+
+    return (sf << 31) | (opc << 29) | (0b01010 << 24) | (shift << 22) | (N << 21) | (Rm << 16) | (imm6 << 10) | (Rn << 5) | Rd;
+}
+
+EXPORT u32 encodeORR(bool use32Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
+    u32 opc  = 0b01;
+
+    u32 sf    = use32Bits ? 1 : 0;
+    u32 shift = 0b00;
+    u32 N     = 0b1;
+    u32 imm6  = 0b000000;
+
+    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
+    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+
+    return (sf << 31) | (opc << 29) | (0b01010 << 24) | (shift << 22) | (N << 21) | (Rm << 16) | (imm6 << 10) | (Rn << 5) | Rd;
+}
+
+EXPORT u32 encodeEOR(bool use32Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
+    u32 opc  = 0b10;
+
+    u32 sf    = use32Bits ? 1 : 0;
+    u32 shift = 0b00;
+    u32 N     = 0b0;
+    u32 imm6  = 0b000000;
+
+    Rn = encodeARM64Reg(Rn, ARM64REG_SP);
+    Rm = encodeARM64Reg(Rm, ARM64REG_SP);
+    Rd = encodeARM64Reg(Rd, ARM64REG_SP);
+
+    return (sf << 31) | (opc << 29) | (0b01010 << 24) | (shift << 22) | (N << 21) | (Rm << 16) | (imm6 << 10) | (Rn << 5) | Rd;
 }
