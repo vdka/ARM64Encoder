@@ -1,3 +1,4 @@
 # ARM64Encoder
 
-A description of this package.
+A Swift package for encoding ARM64 instructions implemented in C.
+
