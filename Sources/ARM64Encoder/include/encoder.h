@@ -2,7 +2,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
-#include <Foundation/Foundation.h>
+//#include <Foundation/Foundation.h>
+
+#define NS_TYPED_ENUM
 
 typedef uint32_t u32;
 #define EXPORT static
@@ -230,82 +232,313 @@ encode(EXTR, 0b00, 0);
 #undef encode
 
 
+// MARK: Branches, Exception Generating and System instructions
 
-
-
-
-
-
-
-
-
-
-
-
-
-// MARK: Branches
-
-/*
- ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
- │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
- ├──┬──────────────┬─────────────────────────────────────────────────────────────────────────────┤
- │ 0│ 0  0  1  0  1│                                 imm26                                       │
- └──┴──────────────┴─────────────────────────────────────────────────────────────────────────────┘
- */
-EXPORT u32 encodeB(u32 imm26) {
-    assert(canPack(imm26, 26));
-    return (0b00101 << 24) | (imm26 << 0);
-}
-
+// MARK: Conditional branch (immediate)
 /*
  ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
  │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
  ├────────────────────┬──┬────────────────────────────────────────────────────────┬──┬───────────┤
- │ 0  1  0  1  0  1  0│ 0│                          imm19                         │ 0│   cond    │
+ │ 0  1  0  1  0  1  0│ 0│                          imm19                         │ 0│    cond   │
  └────────────────────┴──┴────────────────────────────────────────────────────────┴──┴───────────┘
+                       o1                                                          o0
  */
-EXPORT u32 encodeBcond(u32 imm19, ARM64Cond cond) {
-    assert(canPack(imm19, 19));
-    return (0b0101010 << 25) | (imm19 << 5) | cond;
+#define encode(NAME, cond) \
+EXPORT u32 encode##NAME(u32 imm19) { \
+    assert(canPack(imm19, 19)); \
+    return (0b0101010 << 25) | ((imm19 * 4) << 5) | cond; \
 }
 
+encode(BEQ, 0b0000);
+encode(BNE, 0b0001);
+encode(BMI, 0b0100);
+encode(BPL, 0b0101);
+encode(BVS, 0b0110);
+encode(BVC, 0b0111);
+encode(BHI, 0b1000);
+encode(BLS, 0b1001);
+encode(BGE, 0b1010);
+encode(BLT, 0b1011);
+encode(BGT, 0b1100);
+encode(BLE, 0b1101);
+encode(BAL, 0b1110);
+#undef encode
+
+// MARK: Exception generation
 /*
  ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
  │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
- ├──┬──┬──┬──────────────┬────────┬──────────────┬────────┬────────┬──────────────┬──────────────┤
- │sf│ 1│ 1│ 0  1  0  1  1│ 0  0  1│      Rm      │ option │  imm3  │      Rn      │ 1  1  1  1  1│
- └──┴──┴──┴──────────────┴────────┴──────────────┴────────┴────────┴──────────────┴──────────────┘
+ ├───────────────────────┬────────┬───────────────────────────────────────────────┬────────┬─────┤
+ │ 1  1  0  1  0  1  0  0│   opc  │                       imm16                   │   op2  │  LL │
+ └───────────────────────┴────────┴───────────────────────────────────────────────┴────────┴─────┘
  */
-EXPORT u32 encodeCMP(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn) {
-    u32 sf     = use64Bits ? 1 : 0;
-    u32 option = 0b000;
-    u32 imm3   = 0b000;
-
-    Rn = encodeARM64Reg(Rn, ARM64RegSP);
-    Rm = encodeARM64Reg(Rm, ARM64RegZR);
-
-    return (sf << 31) | (1 << 30) | (1 << 29) | (0b01011 << 24) | (0b001 << 21) | (Rm << 16) | (option << 13) | (imm3 << 10) | (Rn << 5) | 0b11111;
+#define encode(NAME, opc, op2, LL) \
+EXPORT u32 encode##NAME(u32 imm16) { \
+    assert(canPack(imm16, 16)); \
+    return (0b11010100 << 22) | (opc << 21) | (imm16 << 5) | (op2 << 2) | LL; \
 }
 
+encode(SVC,   0b000, 0b000, 0b01);
+encode(HVC,   0b000, 0b000, 0b10);
+encode(SMC,   0b000, 0b000, 0b11);
+encode(BRK,   0b001, 0b000, 0b00);
+encode(HLT,   0b010, 0b000, 0b00);
+encode(DCPS1, 0b101, 0b000, 0b01);
+encode(DCPS2, 0b101, 0b000, 0b10);
+encode(DCPS3, 0b101, 0b000, 0b11);
+#undef encode
+
+
+// MARK: System
 /*
  ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
  │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
- ├──┬──┬──┬──────────────┬─────┬───────────────────────────────────┬──────────────┬──────────────┤
- │sf│ 1│ 1│ 1  0  0  0  1│shift│               imm12               │      Rn      │ 1  1  1  1  1│
- └──┴──┴──┴──────────────┴─────┴───────────────────────────────────┴──────────────┴──────────────┘
+ ├─────────────────────────────┬──┬─────┬────────┬───────────┬───────────┬────────┬──────────────┤
+ │ 1  1  0  1  0  1  0  1  0  0│ L│ op0 │   op1  │    CRn    │    CRm    │   op2  │      Rt      │
+ └─────────────────────────────┴──┴─────┴────────┴───────────┴───────────┴────────┴──────────────┘
  */
-EXPORT u32 encodeCMPi(bool use64Bits, u32 shift, u32 imm12, ARM64Reg Rn) {
-    assert(canPack(shift, 2));
-    assert(canPack(imm12, 12));
-
-    u32 sf = use64Bits ? 1 : 0;
-    Rn = encodeARM64Reg(Rn, ARM64RegSP);
-
-    return (sf << 31) | (1 << 30) | (1 << 29) | (0b10001 << 24) | (shift << 22) | (imm12 << 10) | (Rn << 5) | 0b11111;
+// NOTE: The following allow *all* parameters to be provided by the caller
+#define encode(NAME, op2) \
+EXPORT u32 encode##NAME() { \
+    return (0b1101010100 << 22) | (0b011 << 16) | (0b0010 << 12) | (op2 << 5) | 0b11111; \
 }
+
+encode(NOP,   0b000);
+encode(YIELD, 0b001);
+encode(WFE,   0b010);
+encode(WFI,   0b011);
+encode(SEV,   0b100);
+encode(SEVL,  0b101);
+#undef encode
+
+EXPORT u32 encodeCLREX(u32 imm4) {
+    assert(canPack(imm4, 4));
+    return (0b1101010100 << 22) | (0b011 << 16) | (0b0011 << 12) | (imm4 << 8) | (0b010 << 5) | 0b11111;
+}
+
+#define encode(NAME, opc) \
+EXPORT u32 encode##NAME(u32 imm4) { \
+    assert(canPack(imm4, 4)); \
+    return (0b1101010100 << 22) | (0b011 << 16) | (0b0011 << 12) | (imm4 << 8) | (1 << 7) | (opc << 5) | 0b11111; \
+}
+
+encode(DSB, 0b00);
+encode(DMB, 0b01);
+encode(ISB, 0b10);
+#undef encode
+
+#define encode(NAME, L) \
+EXPORT u32 encode##NAME(u32 op1, u32 op2, u32 Cn, u32 Cm, ARM64Reg Rt) { \
+    assert(canPack(op1, 3)); \
+    assert(canPack(op2, 3)); \
+    return (0b1101010100 << 22) | (L << 21) | (0b01 << 19) | (op1 << 16) | (Cn << 12) | (Cm << 8) | (op2 << 5) | Rt; \
+}
+
+encode(SYS,  0);
+encode(SYSL, 1);
+#undef encode
+
+/* NOTE: Missing
+- HINT - hints 8 to 15, and 24 to 127
+- HINT - hints 6 and 7
+- HINT - hints 18 to 23
+- MSRi
+- MSR
+- MRS
+*/
+
+
+// MARK: Unconditional branch (register)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├────────────────────┬───────────┬──────────────┬─────────────────┬──────────────┬──────────────┤
+ │ 1  1  0  1  0  1  1│    opc    │ 1  1  1  1  1│ 0  0  0  0  0  0│      Rn      │ 0  0  0  0  0│
+ └────────────────────┴───────────┴──────────────┴─────────────────┴──────────────┴──────────────┘
+                                         op2             op3                             op4
+ */
+#define encode(NAME, opc) \
+EXPORT u32 encode##NAME(ARM64Reg Rn) { \
+    Rn = encodeARM64Reg(Rn, ARM64RegSP); \
+    return (0b1101011 << 25) | (opc << 21) | (0b11111 << 16) | (Rn << 5); \
+}
+
+encode(BR,   0b0000);
+encode(BLR,  0b0001);
+encode(RET,  0b0010);
+encode(ERET, 0b0100);
+encode(DPRS, 0b0101);
+#undef encode
+
+
+// MARK: Unconditional branch (immediate)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├──┬──────────────┬─────────────────────────────────────────────────────────────────────────────┤
+ │op│ 0  0  1  0  1│                                 imm26                                       │
+ └──┴──────────────┴─────────────────────────────────────────────────────────────────────────────┘
+ */
+#define encode(NAME, op) \
+EXPORT u32 encode##NAME(u32 imm26) { \
+    assert(canPack(imm26, 26)); \
+    return (op << 31) | (0b00101 << 24) | imm26; \
+}
+
+encode(B,  0);
+encode(BL, 1);
+#undef encode
+
+
+// MARK: Compare and branch (immediate)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├──┬─────────────────┬──┬────────────────────────────────────────────────────────┬──────────────┤
+ │sf│ 0  1  1  0  1  0│op│                          imm19                         │      Rt      │
+ └──┴─────────────────┴──┴────────────────────────────────────────────────────────┴──────────────┘
+ */
+#define encode(NAME, op) \
+EXPORT u32 encode##NAME(bool use64Bits, u32 imm19, ARM64Reg Rt) { \
+    assert(canPack(imm19, 19)); \
+    u32 sf = use64Bits ? 1 : 0; \
+    return (sf << 31) | (0b011010 << 25) | (op << 24) | (imm19 << 5) | Rt; \
+}
+
+encode(CBZ,  0);
+encode(CBNZ, 1);
+#undef encode
+
+
+// MARK: Test and branch (immediate)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├──┬─────────────────┬──┬──────────────┬─────────────────────────────────────────┬──────────────┤
+ │sf│ 0  1  1  0  1  0│op│      b40     │                  imm14                  │      Rt      │
+ └──┴─────────────────┴──┴──────────────┴─────────────────────────────────────────┴──────────────┘
+ */
+#define encode(NAME, op) \
+EXPORT u32 encode##NAME(bool use64Bits, u32 b40, u32 imm14, ARM64Reg Rt) { \
+    assert(canPack(b40, 5)); \
+    assert(canPack(imm14, 14)); \
+    u32 sf = use64Bits ? 1 : 0; \
+    return (sf << 31) | (0b011010 << 25) | (op << 24) | (b40 << 19) | (imm14 << 5) | Rt; \
+}
+
+encode(TBZ,  0);
+encode(TBNZ, 1);
+#undef encode
 
 
 // MARK: Load and Stores
+
+// MARK: Load/store exclusive
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├─────┬─────────────────┬──┬──┬──┬──────────────┬──┬──────────────┬──────────────┬──────────────┤
+ │ size│ 0  0  1  0  0  0│o2│ L│o1│      Rs      │o0│      Rt2     │      Rn      │      Rt      │
+ └─────┴─────────────────┴──┴──┴──┴──────────────┴──┴──────────────┴──────────────┴──────────────┘
+ */
+#define encode(NAME, size, o2, L, o1, o0) \
+EXPORT u32 encode##NAME(ARM64Reg Rs, ARM64Reg Rt2, ARM64Reg Rn, ARM64Reg Rt) { \
+    Rs  = encodeARM64Reg(Rs,  ARM64RegSP); \
+    Rt2 = encodeARM64Reg(Rt2, ARM64RegSP); \
+    Rn  = encodeARM64Reg(Rn,  ARM64RegZR); \
+    Rt  = encodeARM64Reg(Rt,  ARM64RegSP); \
+    return (size << 30) | (0b001000 << 24) | (o2 << 23) | (L << 22) | (o1 << 21) | (Rs << 16) | (o0 << 15) | (Rt2 << 10) | (Rn << 5) | Rt; \
+}
+
+encode(STXRB,  0b00, 0, 0, 0, 0);
+encode(STLXRB, 0b00, 0, 0, 0, 1);
+encode(LDXRB,  0b00, 0, 1, 0, 0);
+encode(LDAXRB, 0b00, 0, 1, 0, 1);
+encode(STLRB,  0b00, 1, 0, 0, 1);
+encode(LDARB,  0b00, 1, 1, 0, 1);
+encode(STXRH,  0b01, 0, 0, 0, 0);
+encode(STLXRH, 0b01, 0, 0, 0, 1);
+encode(LDXRH,  0b01, 0, 1, 0, 0);
+encode(LDAXRH, 0b01, 0, 1, 0, 1);
+encode(STLRH,  0b01, 1, 0, 0, 1);
+encode(LDARH,  0b01, 1, 1, 0, 1);
+#undef encode
+
+#define encode(NAME, o2, L, o1, o0) \
+EXPORT u32 encode##NAME(bool use64Bits, ARM64Reg Rs, ARM64Reg Rt2, ARM64Reg Rn, ARM64Reg Rt) { \
+    Rs  = encodeARM64Reg(Rs,  ARM64RegSP); \
+    Rt2 = encodeARM64Reg(Rt2, ARM64RegSP); \
+    Rn  = encodeARM64Reg(Rn,  ARM64RegZR); \
+    Rt  = encodeARM64Reg(Rt,  ARM64RegSP); \
+    u32 size = use64Bits ? 0b11 : 0b10; \
+    return (size << 30) | (0b001000 << 24) | (o2 << 23) | (L << 22) | (o1 << 21) | (Rs << 16) | (o0 << 15) | (Rt2 << 10) | (Rn << 5) | Rt; \
+}
+
+encode(STXR,  0, 0, 0, 0);
+encode(STLXR, 0, 0, 0, 1);
+encode(STXP,  0, 0, 1, 0);
+encode(STLXP, 0, 0, 1, 1);
+encode(LDXR,  0, 1, 0, 0);
+encode(LDAXR, 0, 1, 0, 1);
+encode(LDXP,  0, 1, 1, 0);
+encode(LDAXP, 0, 1, 1, 1);
+encode(STLR,  1, 0, 0, 1);
+encode(LDAR,  1, 1, 0, 1);
+#undef encode
+
+
+// MARK: Load register (literal)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├─────┬────────┬──┬─────┬────────────────────────────────────────────────────────┬──────────────┤
+ │ opc │ 0  1  1│ V│ 0  0│                           imm19                        │      Rt      │
+ └─────┴────────┴──┴─────┴────────────────────────────────────────────────────────┴──────────────┘
+ */
+#define encode(NAME, opc) \
+EXPORT u32 encode##NAME(bool fp, u32 imm19, ARM64Reg Rt) { \
+    assert(canPack(imm19, 19)); \
+    Rt = encodeARM64Reg(Rt, ARM64RegSP); \
+    u32 V = fp ? 1 : 0; \
+    return (opc << 30) | (0b011 << 27) | (V << 26) | (imm19 << 5) | Rt; \
+}
+
+encode(LDR32,  0b00);   // (literal) — 32-bit
+encode(LDR64,  0b01);   // (literal) — 64-bit
+encode(LDRSW,  0b10);   // (literal)
+encode(PRFM,   0b11);   // (literal)
+#undef encode
+
+/* NOTE: Missing:
+- SIMD (although the FP flag doubles for SIMD operations)
+*/
+
+
+// MARK: Load/store no-allocate pair (offset)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├─────┬────────┬──┬────────┬──┬────────────────────┬──────────────┬──────────────┬──────────────┤
+ │ opc │ 1  0  1│ V│ 0  0  0│ L│        imm7        │      Rt2     │      Rn      │      Rt      │
+ └─────┴────────┴──┴────────┴──┴────────────────────┴──────────────┴──────────────┴──────────────┘
+ */
+#define encode(NAME, L) \
+EXPORT u32 encode##NAME(bool use64Bits, u32 imm7, ARM64Reg Rt2, ARM64Reg Rn, ARM64Reg Rt) { \
+    assert(canPack(imm7, 7)); \
+    Rt2 = encodeARM64Reg(Rt2, ARM64RegSP); \
+    Rn  = encodeARM64Reg(Rn,  ARM64RegSP); \
+    Rt  = encodeARM64Reg(Rt,  ARM64RegSP); \
+    u32 opc = use64Bits ? 0b10 : 0b00; \
+    return (opc << 30) | (0b011 << 27) | (L << 22) | (imm7 << 15) | (Rt2 << 10) | (Rn << 5) | Rt; \
+}
+
+encode(STNP, 0); // — 32-bit
+encode(LDNP, 1); // — 32-bit
+#undef encode
+
+/* NOTE: Missing:
+ - SIMD & FP
+ */
 
 /*
  ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
