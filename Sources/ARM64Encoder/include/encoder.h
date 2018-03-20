@@ -494,10 +494,10 @@ encode(LDAR64,  0b11, 1, 1, 0, 1);
  └─────┴────────┴──┴─────┴────────────────────────────────────────────────────────┴──────────────┘
  */
 #define encode(NAME, opc, V) \
-EXPORT u32 encode##NAME(u32 imm19, ARM64Reg Rt) { \
-    assert(canPack(imm19, 19)); \
+EXPORT u32 encode ## NAME ## pcrel(u32 imm19, ARM64Reg Rt) { \
+    assert(canPack(imm19 / 4, 19)); \
     Rt = encodeARM64Reg(Rt, ARM64RegSP); \
-    return (opc << 30) | (0b011 << 27) | (V << 26) | (imm19 << 5) | Rt; \
+    return (opc << 30) | (0b011 << 27) | (V << 26) | ((imm19 * 4) << 5) | Rt; \
 }
 
 encode(LDR32,   0b00, 0);
@@ -732,7 +732,7 @@ encode(LDR64F,  0b11, 1, 0b01);  // (register, SIMD&FP)
  └─────┴────────┴──┴─────┴─────┴───────────────────────────────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, size, V, opc) \
-EXPORT u32 encode ## NAME ## unsignedImmediate(u32 imm12, ARM64Reg Rn, ARM64Reg Rt) { \
+EXPORT u32 encode ## NAME(u32 imm12, ARM64Reg Rn, ARM64Reg Rt) { \
     assert(canPack(imm12, 12)); \
     Rn = encodeARM64Reg(Rn, ARM64RegZR); \
     Rt = encodeARM64Reg(Rt, ARM64RegSP); \
