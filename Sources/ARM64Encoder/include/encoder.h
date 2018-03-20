@@ -2,17 +2,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
-
-#if __has_attribute(swift_wrapper)
-#define SWIFT_ENUM __attribute__((swift_wrapper(enum)))
-#else
-#define SWIFT_ENUM
-#endif
+#include <Foundation/Foundation.h>
 
 typedef uint32_t u32;
 #define EXPORT static
 
-typedef u32 ARM64Reg SWIFT_ENUM;
+typedef u32 ARM64Reg NS_TYPED_ENUM;
 ARM64Reg const ARM64RegR0  =  0;
 ARM64Reg const ARM64RegR1  =  1;
 ARM64Reg const ARM64RegR2  =  2;
@@ -49,12 +44,12 @@ ARM64Reg const ARM64RegZR  = 32;
 ARM64Reg const ARM64RegLR  = 33;
 ARM64Reg const ARM64RegFR  = 34;
 
-typedef u32 ARM64FloatType SWIFT_ENUM;
+typedef u32 ARM64FloatType NS_TYPED_ENUM;
 ARM64FloatType const ARM64FloatTypeSingle = 0b00;
 ARM64FloatType const ARM64FloatTypeDouble = 0b01;
 ARM64FloatType const ARM64FloatTypeHalf   = 0b11;
 
-typedef u32 ARM64Cond SWIFT_ENUM;
+typedef u32 ARM64Cond NS_TYPED_ENUM;
 ARM64Cond const ARM64CondEQ = 0b0000;
 ARM64Cond const ARM64CondNE = 0b0001;
 ARM64Cond const ARM64CondMI = 0b0100;
