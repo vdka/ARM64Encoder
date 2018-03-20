@@ -450,40 +450,38 @@ EXPORT u32 encode##NAME(ARM64Reg Rs, ARM64Reg Rt2, ARM64Reg Rn, ARM64Reg Rt) { \
     return (size << 30) | (0b001000 << 24) | (o2 << 23) | (L << 22) | (o1 << 21) | (Rs << 16) | (o0 << 15) | (Rt2 << 10) | (Rn << 5) | Rt; \
 }
 
-encode(STXRB,  0b00, 0, 0, 0, 0);
-encode(STLXRB, 0b00, 0, 0, 0, 1);
-encode(LDXRB,  0b00, 0, 1, 0, 0);
-encode(LDAXRB, 0b00, 0, 1, 0, 1);
-encode(STLRB,  0b00, 1, 0, 0, 1);
-encode(LDARB,  0b00, 1, 1, 0, 1);
-encode(STXRH,  0b01, 0, 0, 0, 0);
-encode(STLXRH, 0b01, 0, 0, 0, 1);
-encode(LDXRH,  0b01, 0, 1, 0, 0);
-encode(LDAXRH, 0b01, 0, 1, 0, 1);
-encode(STLRH,  0b01, 1, 0, 0, 1);
-encode(LDARH,  0b01, 1, 1, 0, 1);
-#undef encode
-
-#define encode(NAME, o2, L, o1, o0) \
-EXPORT u32 encode##NAME(bool use64Bits, ARM64Reg Rs, ARM64Reg Rt2, ARM64Reg Rn, ARM64Reg Rt) { \
-    Rs  = encodeARM64Reg(Rs,  ARM64RegSP); \
-    Rt2 = encodeARM64Reg(Rt2, ARM64RegSP); \
-    Rn  = encodeARM64Reg(Rn,  ARM64RegZR); \
-    Rt  = encodeARM64Reg(Rt,  ARM64RegSP); \
-    u32 size = use64Bits ? 0b11 : 0b10; \
-    return (size << 30) | (0b001000 << 24) | (o2 << 23) | (L << 22) | (o1 << 21) | (Rs << 16) | (o0 << 15) | (Rt2 << 10) | (Rn << 5) | Rt; \
-}
-
-encode(STXR,  0, 0, 0, 0);
-encode(STLXR, 0, 0, 0, 1);
-encode(STXP,  0, 0, 1, 0);
-encode(STLXP, 0, 0, 1, 1);
-encode(LDXR,  0, 1, 0, 0);
-encode(LDAXR, 0, 1, 0, 1);
-encode(LDXP,  0, 1, 1, 0);
-encode(LDAXP, 0, 1, 1, 1);
-encode(STLR,  1, 0, 0, 1);
-encode(LDAR,  1, 1, 0, 1);
+encode(STXRB,   0b00, 0, 0, 0, 0);
+encode(STLXRB,  0b00, 0, 0, 0, 1);
+encode(LDXRB,   0b00, 0, 1, 0, 0);
+encode(LDAXRB,  0b00, 0, 1, 0, 1);
+encode(STLRB,   0b00, 1, 0, 0, 1);
+encode(LDARB,   0b00, 1, 1, 0, 1);
+encode(STXRH,   0b01, 0, 0, 0, 0);
+encode(STLXRH,  0b01, 0, 0, 0, 1);
+encode(LDXRH,   0b01, 0, 1, 0, 0);
+encode(LDAXRH,  0b01, 0, 1, 0, 1);
+encode(STLRH,   0b01, 1, 0, 0, 1);
+encode(LDARH,   0b01, 1, 1, 0, 1);
+encode(STXR32,  0b10, 0, 0, 0, 0);
+encode(STLXR32, 0b10, 0, 0, 0, 1);
+encode(STXP32,  0b10, 0, 0, 1, 0);
+encode(STLXP32, 0b10, 0, 0, 1, 1);
+encode(LDXR32,  0b10, 0, 1, 0, 0);
+encode(LDAXR32, 0b10, 0, 1, 0, 1);
+encode(LDXP32,  0b10, 0, 1, 1, 0);
+encode(LDAXP32, 0b10, 0, 1, 1, 1);
+encode(STLR32,  0b10, 1, 0, 0, 1);
+encode(LDAR32,  0b10, 1, 1, 0, 1);
+encode(STXR64,  0b11, 0, 0, 0, 0);
+encode(STLXR64, 0b11, 0, 0, 0, 1);
+encode(STXP64,  0b11, 0, 0, 1, 0);
+encode(STLXP64, 0b11, 0, 0, 1, 1);
+encode(LDXR64,  0b11, 0, 1, 0, 0);
+encode(LDAXR64, 0b11, 0, 1, 0, 1);
+encode(LDXP64,  0b11, 0, 1, 1, 0);
+encode(LDAXP64, 0b11, 0, 1, 1, 1);
+encode(STLR64,  0b11, 1, 0, 0, 1);
+encode(LDAR64,  0b11, 1, 1, 0, 1);
 #undef encode
 
 
@@ -495,23 +493,21 @@ encode(LDAR,  1, 1, 0, 1);
  │ opc │ 0  1  1│ V│ 0  0│                           imm19                        │      Rt      │
  └─────┴────────┴──┴─────┴────────────────────────────────────────────────────────┴──────────────┘
  */
-#define encode(NAME, opc) \
-EXPORT u32 encode##NAME(bool fp, u32 imm19, ARM64Reg Rt) { \
+#define encode(NAME, opc, V) \
+EXPORT u32 encode##NAME(u32 imm19, ARM64Reg Rt) { \
     assert(canPack(imm19, 19)); \
     Rt = encodeARM64Reg(Rt, ARM64RegSP); \
-    u32 V = fp ? 1 : 0; \
     return (opc << 30) | (0b011 << 27) | (V << 26) | (imm19 << 5) | Rt; \
 }
 
-encode(LDR32,  0b00);   // (literal) — 32-bit
-encode(LDR64,  0b01);   // (literal) — 64-bit
-encode(LDRSW,  0b10);   // (literal)
-encode(PRFM,   0b11);   // (literal)
+encode(LDR32,   0b00, 0);
+encode(LDR32F,  0b00, 1);
+encode(LDR64,   0b01, 0);
+encode(LDR64F,  0b01, 1);
+encode(LDRSW,   0b10, 0);
+encode(LDR128F, 0b10, 1);
+encode(PRFM,    0b11, 0);
 #undef encode
-
-/* NOTE: Missing:
-- SIMD (although the FP flag doubles for SIMD operations)
-*/
 
 
 // MARK: Load/store no-allocate pair (offset)
@@ -522,124 +518,255 @@ encode(PRFM,   0b11);   // (literal)
  │ opc │ 1  0  1│ V│ 0  0  0│ L│        imm7        │      Rt2     │      Rn      │      Rt      │
  └─────┴────────┴──┴────────┴──┴────────────────────┴──────────────┴──────────────┴──────────────┘
  */
-#define encode(NAME, L) \
-EXPORT u32 encode##NAME(bool use64Bits, u32 imm7, ARM64Reg Rt2, ARM64Reg Rn, ARM64Reg Rt) { \
+#define encode(NAME, opc, V, L) \
+EXPORT u32 encode ## NAME ## pairNoAllocate(u32 imm7, ARM64Reg Rt2, ARM64Reg Rn, ARM64Reg Rt) { \
     assert(canPack(imm7, 7)); \
     Rt2 = encodeARM64Reg(Rt2, ARM64RegSP); \
     Rn  = encodeARM64Reg(Rn,  ARM64RegSP); \
     Rt  = encodeARM64Reg(Rt,  ARM64RegSP); \
-    u32 opc = use64Bits ? 0b10 : 0b00; \
-    return (opc << 30) | (0b011 << 27) | (L << 22) | (imm7 << 15) | (Rt2 << 10) | (Rn << 5) | Rt; \
+    return (opc << 30) | (0b101 << 27) | (V << 26) | (L << 22) | (imm7 << 15) | (Rt2 << 10) | (Rn << 5) | Rt; \
 }
 
-encode(STNP, 0); // — 32-bit
-encode(LDNP, 1); // — 32-bit
+encode(STNP32,   0b00, 0, 0);
+encode(LDNP32,   0b00, 0, 1);
+encode(STNP32F,  0b00, 1, 0);
+encode(LDNP32F,  0b00, 1, 1);
+encode(STNP64F,  0b01, 1, 0);
+encode(LDNP64F,  0b01, 1, 1);
+encode(STNP64,   0b10, 0, 0);
+encode(LDNP64,   0b10, 0, 1);
+encode(STNP128F, 0b10, 1, 0);
+encode(LDNP128F, 0b10, 1, 1);
 #undef encode
 
-/* NOTE: Missing:
- - SIMD & FP
+
+// MARK: Load/store register pair (post-indexed)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├─────┬────────┬──┬────────┬──┬────────────────────┬──────────────┬──────────────┬──────────────┤
+ │ opc │ 1  0  1│ V│ 0  0  1│ L│        imm7        │      Rt2     │      Rn      │      Rt      │
+ └─────┴────────┴──┴────────┴──┴────────────────────┴──────────────┴──────────────┴──────────────┘
+ */
+// TODO
+
+
+// MARK: Load/store register pair (offset)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├─────┬────────┬──┬────────┬──┬────────────────────┬──────────────┬──────────────┬──────────────┤
+ │ opc │ 1  0  1│ V│ 0  1  0│ L│        imm7        │      Rt2     │      Rn      │      Rt      │
+ └─────┴────────┴──┴────────┴──┴────────────────────┴──────────────┴──────────────┴──────────────┘
+ */
+#define encode(NAME, opc, V, L) \
+EXPORT u32 encode ## NAME ## pairOffset(u32 imm7, ARM64Reg Rt2, ARM64Reg Rn, ARM64Reg Rt) { \
+    assert(canPack(imm7, 7)); \
+    Rt2 = encodeARM64Reg(Rt2, ARM64RegSP); \
+    Rn  = encodeARM64Reg(Rn,  ARM64RegSP); \
+    Rt  = encodeARM64Reg(Rt,  ARM64RegSP); \
+    return (opc << 30) | (0b101 << 27) | (V << 26) | (0b010 << 23) | (L << 22) | (imm7 << 15) | (Rt2 << 10) | (Rn << 5) | Rt; \
+}
+
+encode(STP32, 0b00, 0, 0);
+encode(LDP32, 0b00, 0, 1);
+encode(STP32F, 0b00, 1, 0);
+encode(LDP32F, 0b00, 1, 1);
+encode(LDPSW, 0b01, 0, 1);
+encode(STP64F, 0b01, 1, 0);
+encode(LDP64F, 0b01, 1, 1);
+encode(STP64, 0b10, 0, 0);
+encode(LDP64, 0b10, 0, 1);
+encode(STP128F, 0b10, 1, 0);
+encode(LDP128F, 0b10, 1, 1);
+#undef encode
+
+
+// MARK: Load/store register pair (pre-indexed)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├─────┬────────┬──┬────────┬──┬────────────────────┬──────────────┬──────────────┬──────────────┤
+ │ opc │ 1  0  1│ V│ 0  1  1│ L│        imm7        │      Rt2     │      Rn      │      Rt      │
+ └─────┴────────┴──┴────────┴──┴────────────────────┴──────────────┴──────────────┴──────────────┘
  */
 
+
+// MARK: Load/store register (unscaled immediate)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├─────┬────────┬──┬─────┬─────┬──┬──────────────────────────┬─────┬──────────────┬──────────────┤
+ │ size│ 1  1  1│ V│ 0  0│ opc │ 0│           imm9           │ 0  0│      Rn      │      Rt      │
+ └─────┴────────┴──┴─────┴─────┴──┴──────────────────────────┴─────┴──────────────┴──────────────┘
+ */
+#define encode(NAME, size, V, opc) \
+EXPORT u32 encode ## NAME ## unscaledImmediate(u32 imm9, ARM64Reg Rn, ARM64Reg Rt) { \
+    assert(canPack(imm9, 9)); \
+    Rn = encodeARM64Reg(Rn, ARM64RegZR); \
+    Rt = encodeARM64Reg(Rt, ARM64RegSP); \
+    return (size << 30) | (0b111 << 27) | (V << 26) | (opc << 22) | (imm9 << 12) | (Rn << 5) | Rt; \
+}
+
+encode(STUR8F,   0b00, 1, 0b00); // (SIMD&FP) — 8-bit
+encode(LDUR8F,   0b00, 1, 0b01); // (SIMD&FP) — 8-bit
+encode(STUR128F, 0b00, 1, 0b10); // (SIMD&FP) — 128-bit
+encode(LDUR128F, 0b00, 1, 0b11); // (SIMD&FP) — 128-bit
+encode(STUR16F,  0b01, 1, 0b00); // (SIMD&FP) — 16-bit
+encode(LDUR16F,  0b01, 1, 0b01); // (SIMD&FP) — 16-bit
+encode(STUR32F,  0b10, 1, 0b00); // (SIMD&FP) — 32-bit
+encode(LDUR32F,  0b10, 1, 0b01); // (SIMD&FP) — 32-bit
+encode(STUR64F,  0b11, 1, 0b00); // (SIMD&FP) — 64-bit
+encode(LDUR64F,  0b11, 1, 0b01); // (SIMD&FP) — 64-bit
+encode(PRFM,     0b11, 0, 0b10); // (unscaled offset)
+encode(STURB,    0b00, 0, 00);
+encode(LDURB,    0b00, 0, 01);
+encode(STURH,    0b01, 0, 00);
+encode(LDURH,    0b01, 0, 01);
+encode(LDURSB,   0b00, 0, 11);
+encode(LDURSH,   0b01, 0, 11);
+encode(LDURSW,   0b10, 0, 10);
+encode(STUR32,   0b10, 0, 00);
+encode(LDUR32,   0b10, 0, 01);
+encode(STUR64,   0b10, 0, 00);
+encode(LDUR64,   0b10, 0, 01);
+#undef encode
+
+
+// MARK: Load/store register (immediate post-indexed)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├─────┬────────┬──┬─────┬─────┬──┬──────────────────────────┬─────┬──────────────┬──────────────┤
+ │ size│ 1  1  1│ V│ 0  0│ opc │ 0│           imm9           │ 0  1│      Rn      │      Rt      │
+ └─────┴────────┴──┴─────┴─────┴──┴──────────────────────────┴─────┴──────────────┴──────────────┘
+ */
+
+
+// MARK: Load/store register (unprivileged)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├─────┬────────┬──┬─────┬─────┬──┬──────────────────────────┬─────┬──────────────┬──────────────┤
+ │ size│ 1  1  1│ V│ 0  0│ opc │ 0│           imm9           │ 1  0│      Rn      │      Rt      │
+ └─────┴────────┴──┴─────┴─────┴──┴──────────────────────────┴─────┴──────────────┴──────────────┘
+ */
+
+
+// MARK: Load/store register (immediate pre-indexed)
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├─────┬────────┬──┬─────┬─────┬──┬──────────────────────────┬─────┬──────────────┬──────────────┤
+ │ size│ 1  1  1│ V│ 0  0│ opc │ 0│           imm9           │ 1  1│      Rn      │      Rt      │
+ └─────┴────────┴──┴─────┴─────┴──┴──────────────────────────┴─────┴──────────────┴──────────────┘
+ */
+
+
+// MARK: Atomic memory operations
+/*
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+ │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
+ ├─────┬────────┬──┬─────┬──┬──┬──┬──────────────┬──┬────────┬─────┬──────────────┬──────────────┤
+ │ size│ 1  1  1│ V│ 0  0│ A│ R│ 1│      Rs      │o3│   opc  │ 0  0│      Rn      │      Rt      │
+ └─────┴────────┴──┴─────┴──┴──┴──┴──────────────┴──┴────────┴─────┴──────────────┴──────────────┘
+ */
+// NOTE: ARMv8.1 extension
+
+
+// MARK: Load/store register (register offset)
 /*
  ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
  │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
  ├─────┬────────┬──┬─────┬─────┬──┬──────────────┬────────┬──┬─────┬──────────────┬──────────────┤
- │ size│ 1  1  1│ 0│ 0  0│ 0  1│ 1│      Rm      │ option │ S│ 1  0│      Rn      │      Rt      │
+ │ size│ 1  1  1│ V│ 0  0│ opc │ 1│      Rm      │ option │ S│ 1  0│      Rn      │      Rt      │
  └─────┴────────┴──┴─────┴─────┴──┴──────────────┴────────┴──┴─────┴──────────────┴──────────────┘
-                           opc
  */
-EXPORT u32 encodeLD(u32 size, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rt) {
-    assert(canPack(size, 2));
-
-    Rm = encodeARM64Reg(Rm, ARM64RegSP);
-    Rn = encodeARM64Reg(Rn, ARM64RegZR); // FIXME: What is permitted here?
-    Rt = encodeARM64Reg(Rt, ARM64RegSP);
-
-    u32 option = 0b000;
-    u32 S      = 0b0;
-
-    return (size << 30) | (0b111000011 << 21) | (Rm << 16) | (option << 13) | (S << 12) | (0b10 << 10) | (Rn << 5) | Rt;
+#define encode(NAME, size, V, opc) \
+EXPORT u32 encode ## NAME ## registerOffset(u32 option, u32 S, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rt) { \
+    assert(canPack(option, 3)); \
+    assert(canPack(S, 1)); \
+    Rm = encodeARM64Reg(Rm, ARM64RegZR); \
+    Rn = encodeARM64Reg(Rn, ARM64RegZR); \
+    Rt = encodeARM64Reg(Rt, ARM64RegSP); \
+    return (size << 30) | (0b111 << 27) | (V << 26) | (opc << 22) | (1 << 21) | (Rm << 16) | (option << 13) | (S << 12) | (0b10 << 10) | (Rn << 5) | Rt; \
 }
 
+encode(STRB,    0b00, 0, 0b00);  // (register) — shifted register
+encode(LDRB,    0b00, 0, 0b01);  // (register) — shifted register
+encode(LDRSB64, 0b00, 0, 0b10);  // (register) — 64-bit with shifted register offset
+encode(LDRSB32, 0b00, 0, 0b11);  // (register) — 32-bit with shifted register offset
+encode(STR8F,   0b00, 1, 0b00);  // (register, SIMD&FP)
+encode(LDR8F,   0b00, 1, 0b01);  // (register, SIMD&FP)
+encode(STR128F, 0b00, 1, 0b10);  // (register, SIMD&FP)
+encode(LDR128F, 0b00, 1, 0b11);  // (register, SIMD&FP)
+encode(STRH,    0b01, 0, 0b00);  // (register)
+encode(LDRH,    0b01, 0, 0b01);  // (register)
+encode(LDRSH64, 0b01, 0, 0b10);  // (register) — 64-bit
+encode(LDRSH32, 0b01, 0, 0b11);  // (register) — 32-bit
+encode(STR16F,  0b01, 1, 0b00);  // (register, SIMD&FP)
+encode(LDR16F,  0b01, 1, 0b01);  // (register, SIMD&FP)
+encode(STR32,   0b10, 0, 0b00);  // (register) — 32-bit
+encode(LDR32,   0b10, 0, 0b01);  // (register) — 32-bit
+encode(LDRSW,   0b10, 0, 0b10);  // (register)
+encode(STR32F,  0b10, 1, 0b00);  // (register, SIMD&FP)
+encode(LDR32F,  0b10, 1, 0b01);  // (register, SIMD&FP)
+encode(STR64,   0b11, 0, 0b00);  // (register) — 64-bit
+encode(LDR64,   0b11, 0, 0b01);  // (register) — 64-bit
+encode(PRFM,    0b11, 0, 0b10);  // (register)
+encode(STR64F,  0b11, 1, 0b00);  // (register, SIMD&FP)
+encode(LDR64F,  0b11, 1, 0b01);  // (register, SIMD&FP)
+#undef encode
+
+
+// MARK: Load/store register (pac)
+// NOTE: ARMv8.3 extension
+
+
+// MARK: Load/store register (unsigned immediate)
 /*
  ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
  │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
  ├─────┬────────┬──┬─────┬─────┬───────────────────────────────────┬──────────────┬──────────────┤
- │ size│ 1  1  1│ 0│ 0  1│ 0  1│               imm12               │      Rn      │      Rd      │
+ │ size│ 1  1  1│ V│ 0  1│ opc │               imm12               │      Rn      │      Rt      │
  └─────┴────────┴──┴─────┴─────┴───────────────────────────────────┴──────────────┴──────────────┘
-                           opc
  */
-EXPORT u32 encodeLDi(u32 size, u32 imm12, ARM64Reg Rn, ARM64Reg Rd) {
-    assert(canPack(size, 2));
-    assert(canPack(imm12, 12));
-
-    Rn = encodeARM64Reg(Rn, ARM64RegSP);
-    Rd = encodeARM64Reg(Rd, ARM64RegSP);
-
-    return (size << 30) | (0b11100101 << 22) | (imm12 << 10) | (Rn << 5) | Rd;
+#define encode(NAME, size, V, opc) \
+EXPORT u32 encode ## NAME ## unsignedImmediate(u32 imm12, ARM64Reg Rn, ARM64Reg Rt) { \
+    assert(canPack(imm12, 12)); \
+    Rn = encodeARM64Reg(Rn, ARM64RegZR); \
+    Rt = encodeARM64Reg(Rt, ARM64RegSP); \
+    return (size << 30) | (0b111 << 27) | (V << 26) | (0b01 << 24) | (opc << 22) | (imm12 << 10) | (Rn << 5) | Rt; \
 }
 
-/*
- ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
- │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
- ├─────┬────────┬──┬─────┬─────┬─────────────────────────────┬─────┬──────────────┬──────────────┤
- │ size│ 1  1  1│ 0│ 0  0│ 0  1│              imm9           │ 0  0│      Rn      │      Rd      │
- └─────┴────────┴──┴─────┴─────┴─────────────────────────────┴─────┴──────────────┴──────────────┘
-                           opc
- */
-EXPORT u32 encodeLDU(u32 size, u32 imm9, ARM64Reg Rn, ARM64Reg Rd) {
-    assert(canPack(size, 2));
-    assert(canPack(imm9, 9));
-
-    Rn = encodeARM64Reg(Rn, ARM64RegSP);
-    Rd = encodeARM64Reg(Rd, ARM64RegSP);
-
-    return (size << 30) | (0b11100001 << 22) | (imm9 << 12) | (Rn << 5) | Rd;
-}
-
-/*
- ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
- │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
- ├─────┬────────┬──┬─────┬─────┬──┬──────────────┬────────┬──┬─────┬──────────────┬──────────────┤
- │ size│ 1  1  1│ 0│ 0  0│ 0  0│ 1│      Rm      │ option │ S│ 1  0│      Rn      │      Rt      │
- └─────┴────────┴──┴─────┴─────┴──┴──────────────┴────────┴──┴─────┴──────────────┴──────────────┘
-                           opc
- */
-EXPORT u32 encodeSTR(u32 size, u32 imm12, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rt) {
-    assert(canPack(size, 2));
-
-    u32 option = 0b000;
-    u32 S      = 0b0;
-
-    Rm = encodeARM64Reg(Rm, ARM64RegSP);
-    Rn = encodeARM64Reg(Rn, ARM64RegSP);
-    Rt = encodeARM64Reg(Rt, ARM64RegSP);
-
-    return (size << 30) | (0b111000011 << 21) | (Rm << 16) | (option << 13) | (S << 12) | (0b10 << 10) | (Rn << 5) | Rt;
-}
-
-/*
- ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
- │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
- ├─────┬────────┬──┬─────┬─────┬───────────────────────────────────┬──────────────┬──────────────┤
- │ size│ 1  1  1│ 0│ 0  0│ 0  0│               imm12               │      Rn      │      Rt      │
- └─────┴────────┴──┴─────┴─────┴───────────────────────────────────┴──────────────┴──────────────┘
-                           opc
- */
-EXPORT u32 encodeSTRi(u32 size, u32 imm12, ARM64Reg Rn, ARM64Reg Rt) {
-    assert(canPack(size, 2));
-    assert(canPack(imm12, 12));
-
-    u32 opc = 0b00;
-
-    Rn = encodeARM64Reg(Rn, ARM64RegSP);
-    Rt = encodeARM64Reg(Rt, ARM64RegSP);
-
-    return (size << 30) | (0b111 << 27) | (opc << 22) | (imm12 << 10) | (Rn << 5) | Rt;
-}
-
+encode(STRB,    0b00, 0, 0b00);
+encode(LDRB,    0b00, 0, 0b01);
+encode(LDRSB64, 0b00, 0, 0b10);
+encode(LDRSB32, 0b00, 0, 0b11);
+encode(STR8F,   0b00, 1, 0b00);
+encode(LDR8F,   0b00, 1, 0b01);
+encode(STR128F, 0b00, 1, 0b10);
+encode(LDR128F, 0b00, 1, 0b11);
+encode(STRH,    0b01, 0, 0b00);
+encode(LDRH,    0b01, 0, 0b01);
+encode(LDRSH64, 0b01, 0, 0b10);
+encode(LDRSH32, 0b01, 0, 0b11);
+encode(STR16F,  0b01, 1, 0b00);
+encode(LDR16F,  0b01, 1, 0b01);
+encode(STR32,   0b10, 0, 0b00);
+encode(LDR32,   0b10, 0, 0b01);
+encode(LDRSW,   0b10, 0, 0b10);
+encode(STR32F,  0b10, 1, 0b00);
+encode(LDR32F,  0b10, 1, 0b01);
+encode(STR64,   0b11, 0, 0b00);
+encode(LDR64,   0b11, 0, 0b01);
+encode(PRFM,    0b11, 0, 0b10);   
+encode(STR64F,  0b11, 1, 0b00);
+encode(LDR64F,  0b11, 1, 0b01);
+#undef encode
 
 // MARK: Data Processing -- Register
+
 // MARK: Data-processing (2 source)
 
 /*
