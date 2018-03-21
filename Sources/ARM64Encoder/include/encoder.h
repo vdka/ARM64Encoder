@@ -5,7 +5,16 @@
 
 #if __has_attribute(swift_wrapper)
 #define BRIDGE_ENUM_TO_SWIFT __attribute__((swift_wrapper(enum)))
+#else
+#define BRIDGE_ENUM_TO_SWIFT
 #endif
+
+#if __has_attribute(swift_name)
+# define BRIDGE_TO_SWIFT_WITH_NAME(_NAME) __attribute__((swift_name(#_NAME)))
+#else
+# define BRIDGE_TO_SWIFT_WITH_NAME(_NAME)
+#endif
+
 
 typedef uint32_t u32;
 #define EXPORT static
@@ -100,7 +109,8 @@ EXPORT u32 encodeARM64Reg(ARM64Reg reg, ARM64Reg permittedStackAlias) {
  └──┴─────┴──────────────┴────────────────────────────────────────────────────────┴──────────────┘
  */
 #define encode(NAME, op) \
-EXPORT u32 encode##NAME(u32 imm21, ARM64Reg Rd) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(imm21:_:)) \
+EXPORT u32 encode ## NAME(u32 imm21, ARM64Reg Rd) { \
     assert(canPack(imm21, 21)); \
     u32 imm   = imm << (op ? 12 : 0); \
     u32 immlo = imm & 0b11; \
@@ -113,6 +123,7 @@ encode(ADR,  0);
 encode(ADRP, 1);
 #undef encode
 
+
 // MARK: Add/subtract (immediate)
 /*
  ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -122,6 +133,7 @@ encode(ADRP, 1);
  └──┴──┴──┴──────────────┴─────┴───────────────────────────────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, op, S) \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME ## i(use64Bits:shift:imm12:_:_:)) \
 EXPORT u32 encode ## NAME ## i(bool use64Bits, u32 shift, u32 imm12, ARM64Reg Rn, ARM64Reg Rd) { \
     assert(canPack(shift, 2)); \
     assert(canPack(imm12, 12)); \
@@ -131,9 +143,9 @@ EXPORT u32 encode ## NAME ## i(bool use64Bits, u32 shift, u32 imm12, ARM64Reg Rn
     return (sf << 31) | (op << 30) | (S << 29) | (0b10001 << 24) | (shift << 22) | (imm12 << 10) | (Rn << 5) | Rd; \
 }
 
-encode(ADD,  0, 0);
+encode(ADD, 0, 0);
 encode(ADDS, 0, 1);
-encode(SUB,  1, 0);
+encode(SUB, 1, 0);
 encode(SUBS, 1, 1);
 #undef encode
 
@@ -146,6 +158,7 @@ encode(SUBS, 1, 1);
  └──┴─────┴─────────────────┴──┴─────────────────┴─────────────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, opc) \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME ## i(use64Bits:imm:_:_:)) \
 EXPORT u32 encode ## NAME ## i(bool use64Bits, u32 imm, ARM64Reg Rn, ARM64Reg Rd) { \
     assert(canPack(imm, use64Bits ? 13 : 12)); \
     u32 sf = use64Bits ? 1 : 0; \
@@ -172,6 +185,7 @@ encode(ANDS, 0b11);
  └──┴─────┴─────────────────┴─────┴───────────────────────────────────────────────┴──────────────┘
  */
  #define encode(NAME, opc) \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME ## i(use64Bits:hw:imm16:_:)) \
 EXPORT u32 encode ## NAME ## i(bool use64Bits, u32 hw, u32 imm16, ARM64Reg Rd) { \
     assert(canPack(hw, 2)); \
     assert(canPack(imm16, 16)); \
@@ -194,6 +208,7 @@ encode(MOVK, 0b11);
  └──┴─────┴─────────────────┴──┴─────────────────┴─────────────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, opc) \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME ## i(use64Bits:imm:_:_:)) \
 EXPORT u32 encode ## NAME ## i(bool use64Bits, u32 imm, ARM64Reg Rn, ARM64Reg Rd) { \
     assert(canPack(imm, use64Bits ? 13 : 12)); \
     u32 sf = use64Bits ? 1 : 0; \
@@ -219,7 +234,8 @@ encode(UBFM, 0b10);
  └──┴─────┴─────────────────┴──┴──┴──────────────┴─────────────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, op21, o0) \
-EXPORT u32 encode ## NAME ## i(bool use64Bits, u32 imm, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(use64Bits:imm:_:_:_:)) \
+EXPORT u32 encode ## NAME(bool use64Bits, u32 imm, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
     assert(canPack(imm, use64Bits ? 6 : 5)); \
     u32 sf = use64Bits ? 1 : 0; \
     u32 N = sf; \
@@ -245,7 +261,8 @@ encode(EXTR, 0b00, 0);
                        o1                                                          o0
  */
 #define encode(NAME, cond) \
-EXPORT u32 encode##NAME(u32 imm19) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(imm19:)) \
+EXPORT u32 encode ## NAME(u32 imm19) { \
     assert(canPack(imm19, 19)); \
     return (0b0101010 << 25) | ((imm19 * 4) << 5) | cond; \
 }
@@ -274,7 +291,8 @@ encode(BAL, 0b1110);
  └───────────────────────┴────────┴───────────────────────────────────────────────┴────────┴─────┘
  */
 #define encode(NAME, opc, op2, LL) \
-EXPORT u32 encode##NAME(u32 imm16) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(imm16:)) \
+EXPORT u32 encode ## NAME(u32 imm16) { \
     assert(canPack(imm16, 16)); \
     return (0b11010100 << 22) | (opc << 21) | (imm16 << 5) | (op2 << 2) | LL; \
 }
@@ -300,7 +318,7 @@ encode(DCPS3, 0b101, 0b000, 0b11);
  */
 // NOTE: The following allow *all* parameters to be provided by the caller
 #define encode(NAME, op2) \
-EXPORT u32 encode##NAME() { \
+EXPORT u32 encode ## NAME() { \
     return (0b1101010100 << 22) | (0b011 << 16) | (0b0010 << 12) | (op2 << 5) | 0b11111; \
 }
 
@@ -312,13 +330,15 @@ encode(SEV,   0b100);
 encode(SEVL,  0b101);
 #undef encode
 
+BRIDGE_TO_SWIFT_WITH_NAME(encodeCLREX(imm4:))
 EXPORT u32 encodeCLREX(u32 imm4) {
     assert(canPack(imm4, 4));
     return (0b1101010100 << 22) | (0b011 << 16) | (0b0011 << 12) | (imm4 << 8) | (0b010 << 5) | 0b11111;
 }
 
 #define encode(NAME, opc) \
-EXPORT u32 encode##NAME(u32 imm4) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(imm4:)) \
+EXPORT u32 encode ## NAME(u32 imm4) { \
     assert(canPack(imm4, 4)); \
     return (0b1101010100 << 22) | (0b011 << 16) | (0b0011 << 12) | (imm4 << 8) | (1 << 7) | (opc << 5) | 0b11111; \
 }
@@ -328,8 +348,10 @@ encode(DMB, 0b01);
 encode(ISB, 0b10);
 #undef encode
 
+// TODO: System register wrappers
 #define encode(NAME, L) \
-EXPORT u32 encode##NAME(u32 op1, u32 op2, u32 Cn, u32 Cm, ARM64Reg Rt) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(op1:op2:Cn:Cm:_:)) \
+EXPORT u32 encode ## NAME(u32 op1, u32 op2, u32 Cn, u32 Cm, ARM64Reg Rt) { \
     assert(canPack(op1, 3)); \
     assert(canPack(op2, 3)); \
     return (0b1101010100 << 22) | (L << 21) | (0b01 << 19) | (op1 << 16) | (Cn << 12) | (Cm << 8) | (op2 << 5) | Rt; \
@@ -359,7 +381,7 @@ encode(SYSL, 1);
                                          op2             op3                             op4
  */
 #define encode(NAME, opc) \
-EXPORT u32 encode##NAME(ARM64Reg Rn) { \
+EXPORT u32 encode ## NAME(ARM64Reg Rn) { \
     Rn = encodeARM64Reg(Rn, ARM64RegSP); \
     return (0b1101011 << 25) | (opc << 21) | (0b11111 << 16) | (Rn << 5); \
 }
@@ -381,7 +403,8 @@ encode(DPRS, 0b0101);
  └──┴──────────────┴─────────────────────────────────────────────────────────────────────────────┘
  */
 #define encode(NAME, op) \
-EXPORT u32 encode##NAME(u32 imm26) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(imm26:)) \
+EXPORT u32 encode ## NAME(u32 imm26) { \
     assert(canPack(imm26, 26)); \
     return (op << 31) | (0b00101 << 24) | imm26; \
 }
@@ -400,7 +423,8 @@ encode(BL, 1);
  └──┴─────────────────┴──┴────────────────────────────────────────────────────────┴──────────────┘
  */
 #define encode(NAME, op) \
-EXPORT u32 encode##NAME(bool use64Bits, u32 imm19, ARM64Reg Rt) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(use64Bits:imm19:_:)) \
+EXPORT u32 encode ## NAME(bool use64Bits, u32 imm19, ARM64Reg Rt) { \
     assert(canPack(imm19, 19)); \
     u32 sf = use64Bits ? 1 : 0; \
     return (sf << 31) | (0b011010 << 25) | (op << 24) | (imm19 << 5) | Rt; \
@@ -420,7 +444,8 @@ encode(CBNZ, 1);
  └──┴─────────────────┴──┴──────────────┴─────────────────────────────────────────┴──────────────┘
  */
 #define encode(NAME, op) \
-EXPORT u32 encode##NAME(bool use64Bits, u32 b40, u32 imm14, ARM64Reg Rt) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(use64Bits:b40:imm14:_:)) \
+EXPORT u32 encode ## NAME(bool use64Bits, u32 b40, u32 imm14, ARM64Reg Rt) { \
     assert(canPack(b40, 5)); \
     assert(canPack(imm14, 14)); \
     u32 sf = use64Bits ? 1 : 0; \
@@ -443,7 +468,7 @@ encode(TBNZ, 1);
  └─────┴─────────────────┴──┴──┴──┴──────────────┴──┴──────────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, size, o2, L, o1, o0) \
-EXPORT u32 encode##NAME(ARM64Reg Rs, ARM64Reg Rt2, ARM64Reg Rn, ARM64Reg Rt) { \
+EXPORT u32 encode ## NAME(ARM64Reg Rs, ARM64Reg Rt2, ARM64Reg Rn, ARM64Reg Rt) { \
     Rs  = encodeARM64Reg(Rs,  ARM64RegSP); \
     Rt2 = encodeARM64Reg(Rt2, ARM64RegSP); \
     Rn  = encodeARM64Reg(Rn,  ARM64RegZR); \
@@ -495,6 +520,7 @@ encode(LDAR64,  0b11, 1, 1, 0, 1);
  └─────┴────────┴──┴─────┴────────────────────────────────────────────────────────┴──────────────┘
  */
 #define encode(NAME, opc, V) \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME ## pcrel(imm19:_:)) \
 EXPORT u32 encode ## NAME ## pcrel(u32 imm19, ARM64Reg Rt) { \
     assert(canPack(imm19 / 4, 19)); \
     Rt = encodeARM64Reg(Rt, ARM64RegSP); \
@@ -520,6 +546,7 @@ encode(PRFM,    0b11, 0);
  └─────┴────────┴──┴────────┴──┴────────────────────┴──────────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, opc, V, L) \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME ## pairNoAllocate(imm7:_:_:_:)) \
 EXPORT u32 encode ## NAME ## pairNoAllocate(u32 imm7, ARM64Reg Rt2, ARM64Reg Rn, ARM64Reg Rt) { \
     assert(canPack(imm7, 7)); \
     Rt2 = encodeARM64Reg(Rt2, ARM64RegSP); \
@@ -561,6 +588,7 @@ encode(LDNP128F, 0b10, 1, 1);
  └─────┴────────┴──┴────────┴──┴────────────────────┴──────────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, opc, V, L) \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME ## pairOffset(imm7:_:_:_:)) \
 EXPORT u32 encode ## NAME ## pairOffset(u32 imm7, ARM64Reg Rt2, ARM64Reg Rn, ARM64Reg Rt) { \
     assert(canPack(imm7, 7)); \
     Rt2 = encodeARM64Reg(Rt2, ARM64RegSP); \
@@ -602,6 +630,7 @@ encode(LDP128F, 0b10, 1, 1);
  └─────┴────────┴──┴─────┴─────┴──┴──────────────────────────┴─────┴──────────────┴──────────────┘
  */
 #define encode(NAME, size, V, opc) \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME ## unscaledImmediate(imm9:_:_:)) \
 EXPORT u32 encode ## NAME ## unscaledImmediate(u32 imm9, ARM64Reg Rn, ARM64Reg Rt) { \
     assert(canPack(imm9, 9)); \
     Rn = encodeARM64Reg(Rn, ARM64RegZR); \
@@ -684,6 +713,7 @@ encode(LDUR64,   0b10, 0, 01);
  └─────┴────────┴──┴─────┴─────┴──┴──────────────┴────────┴──┴─────┴──────────────┴──────────────┘
  */
 #define encode(NAME, size, V, opc) \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME ## registerOffset(option:S:_:_:_:)) \
 EXPORT u32 encode ## NAME ## registerOffset(u32 option, u32 S, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rt) { \
     assert(canPack(option, 3)); \
     assert(canPack(S, 1)); \
@@ -733,6 +763,7 @@ encode(LDR64F,  0b11, 1, 0b01);  // (register, SIMD&FP)
  └─────┴────────┴──┴─────┴─────┴───────────────────────────────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, size, V, opc) \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(imm12:_:_:)) \
 EXPORT u32 encode ## NAME(u32 imm12, ARM64Reg Rn, ARM64Reg Rt) { \
     assert(canPack(imm12, 12)); \
     Rn = encodeARM64Reg(Rn, ARM64RegZR); \
@@ -769,7 +800,6 @@ encode(LDR64F,  0b11, 1, 0b01);
 // MARK: Data Processing -- Register
 
 // MARK: Data-processing (2 source)
-
 /*
  ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
  │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
@@ -779,7 +809,8 @@ encode(LDR64F,  0b11, 1, 0b01);
          S
  */
 #define encode(NAME, opcode) \
-EXPORT u32 encode##NAME(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(use64Bits:_:_:_:)) \
+EXPORT u32 encode ## NAME(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
     u32 sf = use64Bits ? 1 : 0; \
     Rn = encodeARM64Reg(Rn, ARM64RegSP); \
     Rm = encodeARM64Reg(Rm, ARM64RegSP); \
@@ -797,17 +828,17 @@ encode(RORV, 0b01011);
 
 
 // MARK: Data-processing (1 source)
-
 /*
  ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
  │31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0│
  ├──┬──┬──┬───────────────────────┬──────────────┬─────────────────┬──────────────┬──────────────┤
- │sf│ 1│ 0│ 1  1  0  1  0  1  1  0│      Rm      │      opcode     │      Rn      │      Rd      │
+ │sf│ 1│ 0│ 1  1  0  1  0  1  1  0│    opcode2   │      opcode     │      Rn      │      Rd      │
  └──┴──┴──┴───────────────────────┴──────────────┴─────────────────┴──────────────┴──────────────┘
          S
  */
 #define encode(NAME, opcode2, opcode) \
-EXPORT u32 encode##NAME(bool use64Bits, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(use64Bits:_:_:)) \
+EXPORT u32 encode ## NAME(bool use64Bits, ARM64Reg Rn, ARM64Reg Rd) { \
     u32 sf = use64Bits ? 1 : 0; \
     Rn = encodeARM64Reg(Rn, ARM64RegSP); \
     Rd = encodeARM64Reg(Rd, ARM64RegSP); \
@@ -832,13 +863,14 @@ encode(CLS,   0b00000, 0b00101);
  └──┴─────┴──────────────┴─────┴──┴──────────────┴─────────────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, opc, N) \
-EXPORT u32 encode##NAME(bool use64Bits, u32 shift, ARM64Reg Rm, u32 imm6, ARM64Reg Rn, ARM64Reg Rd) { \
-    assert(canPack(imm6, 5)); /* NOTE: 1xxxxx is UNALLOCATED and there for imm6 is really an imm5 */ \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(use64Bits:shift:imm5:_:_:_:)) \
+EXPORT u32 encode ## NAME(bool use64Bits, u32 shift, u32 imm5, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
+    assert(canPack(imm5, 5)); /* NOTE: 1xxxxx is UNALLOCATED and therefore the imm6 in the above diagram is really an imm5 */ \
     u32 sf = use64Bits ? 1 : 0; \
     Rn = encodeARM64Reg(Rn, ARM64RegSP); \
     Rm = encodeARM64Reg(Rm, ARM64RegSP); \
     Rd = encodeARM64Reg(Rd, ARM64RegSP); \
-    return (sf << 31) | (opc << 29) | (0b11010 << 24) | (shift << 22) | (N << 21) | (Rm << 16) | (imm6 << 10) | (Rn << 5) | Rd; \
+    return (sf << 31) | (opc << 29) | (0b11010 << 24) | (shift << 22) | (N << 21) | (Rm << 16) | (imm5 << 10) | (Rn << 5) | Rd; \
 }
 
 encode(AND,  0b00, 0);
@@ -862,13 +894,14 @@ encode(BICS, 0b11, 1);
  └──┴──┴──┴──────────────┴─────┴──┴──────────────┴─────────────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, op, S) \
-EXPORT u32 encode##NAME(bool use64Bits, u32 shift, ARM64Reg Rm, u32 imm6, ARM64Reg Rn, ARM64Reg Rd) { \
-    assert(canPack(imm6, 5)); /* NOTE: 1xxxxx is UNALLOCATED and there for imm6 is really an imm5 */ \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(use64Bits:shift:imm5:_:_:_:)) \
+EXPORT u32 encode ## NAME(bool use64Bits, u32 shift, u32 imm5, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
+    assert(canPack(imm5, 5)); /* NOTE: 1xxxxx is UNALLOCATED and therefore the imm6 in the above diagram is really an imm5 */ \
     u32 sf = use64Bits ? 1 : 0; \
     Rn = encodeARM64Reg(Rn, ARM64RegSP); \
     Rm = encodeARM64Reg(Rm, ARM64RegSP); \
     Rd = encodeARM64Reg(Rd, ARM64RegSP); \
-    return (sf << 31) | (op << 30) | (S << 29) | (0b11010 << 24) | (shift << 22) | (Rm << 16) | (imm6 << 10) | (Rn << 5) | Rd; \
+    return (sf << 31) | (op << 30) | (S << 29) | (0b11010 << 24) | (shift << 22) | (Rm << 16) | (imm5 << 10) | (Rn << 5) | Rd; \
 }
 
 encode(ADD,  0, 0);
@@ -886,7 +919,8 @@ encode(SUBS, 1, 1);
  └──┴──┴──┴──────────────┴─────┴──┴──────────────┴────────┴────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, op, S) \
-EXPORT u32 encode## NAME ## X(bool use64Bits, ARM64Reg Rm, u32 option, u32 imm3, ARM64Reg Rn, ARM64Reg Rd) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME ## x(use64Bits:option:imm3:_:_:_:)) \
+EXPORT u32 encode## NAME ## x(bool use64Bits, u32 option, u32 imm3, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
     assert(canPack(imm3, 3)); \
     assert(canPack(option, 3)); \
     u32 sf = use64Bits ? 1 : 0; \
@@ -912,7 +946,8 @@ encode(SUBS, 1, 1);
                                                        opcode2
  */
 #define encode(NAME, op, S) \
-EXPORT u32 encode##NAME(bool use64Bits, ARM64Reg Rm, u32 option, u32 imm3, ARM64Reg Rn, ARM64Reg Rd) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(use64Bits:option:imm3:_:_:_:)) \
+EXPORT u32 encode ## NAME(bool use64Bits, u32 option, u32 imm3, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
     assert(canPack(imm3, 3)); \
     assert(canPack(option, 3)); \
     u32 sf = use64Bits ? 1 : 0; \
@@ -938,7 +973,8 @@ encode(SBCS, 1, 1);
          S                                                       o2                o3
  */
 #define encode(NAME, op, S) \
-EXPORT u32 encode##NAME(bool use64Bits, ARM64Reg Rm, u32 cond, ARM64Reg Rn, u32 nzcv) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(use64Bits:cond:nzcv:_:_:)) \
+EXPORT u32 encode ## NAME(bool use64Bits, u32 cond, u32 nzcv, ARM64Reg Rm, ARM64Reg Rn) { \
     assert(canPack(cond, 3)); \
     assert(canPack(nzcv, 4)); \
     u32 sf = use64Bits ? 1 : 0; \
@@ -961,7 +997,8 @@ encode(CCMP, 1, 1);
          S                                                       o2                o3
  */
 #define encode(NAME, op, S) \
-EXPORT u32 encode##NAME ## i(bool use64Bits, u32 imm5, u32 cond, ARM64Reg Rn, u32 nzcv) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME ## i(use64Bits:cond:nzcv:imm5:_:)) \
+EXPORT u32 encode ## NAME ## i(bool use64Bits, u32 cond, u32 nzcv, u32 imm5, ARM64Reg Rn) { \
     assert(canPack(imm5, 5)); \
     assert(canPack(cond, 3)); \
     assert(canPack(nzcv, 4)); \
@@ -983,7 +1020,8 @@ encode(CCMP, 1, 1);
  └──┴──┴──┴───────────────────────┴──────────────┴───────────┴─────┴──────────────┴──────────────┘
  */
 #define encode(NAME, op, S, op2) \
-EXPORT u32 encode##NAME(bool use64Bits, u32 cond, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(use64Bits:cond:_:_:_:)) \
+EXPORT u32 encode ## NAME(bool use64Bits, u32 cond, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
     assert(canPack(cond, 3)); \
     u32 sf = use64Bits ? 1 : 0; \
     Rm = encodeARM64Reg(Rm, ARM64RegSP); \
@@ -1007,7 +1045,8 @@ encode(CSNEG, 1, 0, 0b01);
  └──┴─────┴──────────────┴────────┴──────────────┴──┴──────────────┴──────────────┴──────────────┘
  */
 #define encode(NAME, op54, op31, o0) \
-EXPORT u32 encod ##NAME(bool use64Bits, ARM64Reg Rm, ARM64Reg Ra, ARM64Reg Rn, ARM64Reg Rd) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(use64Bits:_:_:_:_:)) \
+EXPORT u32 encod ## NAME(bool use64Bits, ARM64Reg Rm, ARM64Reg Ra, ARM64Reg Rn, ARM64Reg Rd) { \
     u32 sf = use64Bits ? 1 : 0; \
     Rm = encodeARM64Reg(Rm, ARM64RegSP); \
     Rn = encodeARM64Reg(Rn, ARM64RegSP); \
@@ -1038,7 +1077,8 @@ encode(UMULH,  0b00, 0b110, 0);
          S
  */
 #define encode(NAME, rmode, opcode) \
-EXPORT u32 encode##NAME(ARM64FloatType type, ARM64Reg Rn, ARM64Reg Rd) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(type:_:_:)) \
+EXPORT u32 encode ## NAME(ARM64FloatType type, ARM64Reg Rn, ARM64Reg Rd) { \
     Rn = encodeARM64Reg(Rn, ARM64RegSP); \
     Rd = encodeARM64Reg(Rd, ARM64RegSP); \
     return (0b11110 << 24) | (type << 22) | (1 << 21) | (rmode << 19) | (opcode << 16) | (Rn << 5) | Rd; \
@@ -1072,7 +1112,8 @@ encode(FCVTZU,     0b11, 0b001);
    M     S
  */
 #define encode(NAME, op, opcode2) \
-EXPORT u32 encode##NAME(ARM64FloatType type, ARM64Reg Rm, ARM64Reg Rn) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(type:_:_:)) \
+EXPORT u32 encode ## NAME(ARM64FloatType type, ARM64Reg Rm, ARM64Reg Rn) { \
     Rn = encodeARM64Reg(Rn, ARM64RegSP); \
     Rm = encodeARM64Reg(Rm, ARM64RegSP); \
     return (0b11110 << 24) | (type << 22) | (1 << 21) | (Rm << 16) | (op << 14) | (0b1000 << 10) | (Rn << 5) | opcode2; \
@@ -1095,6 +1136,7 @@ encode(FCMPZE, 0b00, 0b11000);
  └──┴──┴──┴──────────────┴─────┴──┴───────────────────────┴────────┴──────────────┴──────────────┘
    M     S
  */
+BRIDGE_TO_SWIFT_WITH_NAME(encodeFMOVi(type:imm8:_:))
 EXPORT u32 encodeFMOVi(ARM64FloatType type, u32 imm8, ARM64Reg Rd) {
     assert(canPack(imm8, 8));
     Rd = encodeARM64Reg(Rd, ARM64RegSP);
@@ -1113,7 +1155,8 @@ EXPORT u32 encodeFMOVi(ARM64FloatType type, u32 imm8, ARM64Reg Rd) {
    M     S
  */
 #define encode(NAME, opcode) \
-EXPORT u32 encode##NAME(ARM64FloatType type, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(type:_:_:)) \
+EXPORT u32 encode ## NAME(ARM64FloatType type, ARM64Reg Rn, ARM64Reg Rd) { \
     Rn = encodeARM64Reg(Rn, ARM64RegSP); \
     Rd = encodeARM64Reg(Rd, ARM64RegSP); \
     return (0b11110 << 24) | (type << 22) | (1 << 21) | (opcode << 15) | (0b10000 << 10) | (Rn << 5) | Rd; \
@@ -1147,7 +1190,8 @@ encode(FRINTI, 0b001111);
    M     S
  */
 #define encode(NAME, opcode) \
-EXPORT u32 encode##NAME(ARM64FloatType type, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(type:_:_:_:)) \
+EXPORT u32 encode ## NAME(ARM64FloatType type, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) { \
     Rn = encodeARM64Reg(Rn, ARM64RegSP); \
     Rm = encodeARM64Reg(Rm, ARM64RegSP); \
     Rd = encodeARM64Reg(Rd, ARM64RegSP); \
@@ -1175,6 +1219,7 @@ encode(FNMUL,  0b1000);
  └──┴──┴──┴──────────────┴─────┴──┴──────────────┴───────────┴─────┴──────────────┴──────────────┘
    M     S
  */
+BRIDGE_TO_SWIFT_WITH_NAME(encodeFCSEL(type:cond:_:_:_:))
 EXPORT u32 encodeFCSEL(ARM64FloatType type, u32 cond, ARM64Reg Rm, ARM64Reg Rn, ARM64Reg Rd) {
     assert(canPack(cond, 4));
     Rn = encodeARM64Reg(Rn, ARM64RegSP);
@@ -1195,7 +1240,8 @@ EXPORT u32 encodeFCSEL(ARM64FloatType type, u32 cond, ARM64Reg Rm, ARM64Reg Rn, 
    M     S
  */
 #define encode(NAME, o0, o1) \
-EXPORT u32 encode##NAME(ARM64FloatType type, ARM64Reg Rm, ARM64Reg Ra, ARM64Reg Rn, ARM64Reg Rd) { \
+BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(type:_:_:_:_:)) \
+EXPORT u32 encode ## NAME(ARM64FloatType type, ARM64Reg Rm, ARM64Reg Ra, ARM64Reg Rn, ARM64Reg Rd) { \
     Rn = encodeARM64Reg(Rn, ARM64RegSP); \
     Ra = encodeARM64Reg(Ra, ARM64RegSP); \
     Rm = encodeARM64Reg(Rm, ARM64RegSP); \
