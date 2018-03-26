@@ -294,7 +294,7 @@ encode(BAL, 0b1110);
 BRIDGE_TO_SWIFT_WITH_NAME(encode ## NAME(imm16:)) \
 EXPORT u32 encode ## NAME(u32 imm16) { \
     assert(canPack(imm16, 16)); \
-    return (0b11010100 << 22) | (opc << 21) | (imm16 << 5) | (op2 << 2) | LL; \
+    return (0b11010100 << 24) | (opc << 21) | (imm16 << 5) | (op2 << 2) | LL; \
 }
 
 encode(SVC,   0b000, 0b000, 0b01);
